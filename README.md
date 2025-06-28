@@ -61,6 +61,11 @@ Extra = {
   "api_token": "cbffd28e42404578a90182057252606"
 }
 
-Dataase conn 
-weather_conn
+Database conn 
+Connection Id * - weather_conn
+Connection Type * - Postgres
+Host - Postgres 
+Database - weather
+Login - airflow
+Port - 5432 
 
