@@ -4,6 +4,7 @@ from airflow.operators.python import PythonOperator
 from core.python_scripts.utils import etl
 from core.python_scripts.cities import CITIES
 
+
 with DAG(
         dag_id='weather_etl',
         schedule='@daily',

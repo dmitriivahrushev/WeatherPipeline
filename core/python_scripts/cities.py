@@ -1,3 +1,4 @@
+# Список самых крупных городов России.
 CITIES = [
     "Moscow", "Saint Petersburg", "Novosibirsk", "Yekaterinburg", "Kazan",
     "Nizhny Novgorod", "Chelyabinsk", "Samara", "Omsk", "Rostov-on-Don",

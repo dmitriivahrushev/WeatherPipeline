@@ -8,12 +8,16 @@ import humanize
 
 def flatten(dictionary: dict, parent_key='', separator='_') -> dict:
     """
-    flatten dict. Example: flatten({'a': 1, 'c': {'a': 2, 'b': {'x': 5, 'y' : 10}}, 'd': [1, 2, 3]}) ->
-    {'a': 1, 'c_a': 2, 'c_b_x': 5, 'd': [1, 2, 3], 'c_b_y': 10}
-    :param dictionary:
-    :param parent_key: prefix for parent key
-    :param separator: separator between keys
-    :return: flatten dict
+    Преобразует вложенный словарь в плоский словарь с объединёнными ключами.
+
+    Пример:
+    flatten({'a': 1, 'c': {'a': 2, 'b': {'x': 5, 'y' : 10}}, 'd': [1, 2, 3]}) ->
+    {'a': 1, 'c_a': 2, 'c_b_x': 5, 'c_b_y': 10, 'd': [1, 2, 3]}
+
+    :param dictionary: Входной словарь с вложенными структурами.
+    :param parent_key: Префикс для ключей (используется при рекурсии).
+    :param separator: Разделитель между уровнями ключей.
+    :return: Плоский словарь с объединёнными ключами.
     """
     items = []
     for key, value in dictionary.items():
@@ -27,11 +31,12 @@ def flatten(dictionary: dict, parent_key='', separator='_') -> dict:
 
 def get_data(url: str, headers: dict[str, str], params: dict[str, str]) -> dict:
     """
-    Base function to get data from generic API
-    :param url:
-    :param headers:
-    :param params:
-    :return: dict with all attributes API provides
+    Базовая функция для получения данных из произвольного API по HTTP-запросу.
+
+    :param url: Полный URL-адрес запроса.
+    :param headers: Заголовки запроса (например, Content-Type, Authorization и др.).
+    :param params: Параметры запроса (например, ключ API, город, фильтры и т.д.).
+    :return: Ответ API в формате словаря (JSON-объект).
     """
     params_to_display = {key: value for (key, value) in params.items() if
                          key.lower() not in ('key', 'api_key', 'token')}
@@ -59,6 +64,13 @@ def get_data(url: str, headers: dict[str, str], params: dict[str, str]) -> dict:
 
 
 def get_current_weather(city: str, aqi: str = 'no') -> dict:
+    """
+    Получает текущую погоду для заданного города с использованием подключения Airflow.
+
+    :param city: Название города, для которого нужно получить погоду.
+    :param aqi: Флаг необходимости индекса качества воздуха (по умолчанию 'no').
+    :return: Словарь с данными о текущей погоде от API.
+    """
     http_conn_id = HttpHook.get_connection('http_conn_id')
     api_token = http_conn_id.extra_dejson.get('api_token')
     wather_url = http_conn_id.host
@@ -81,9 +93,10 @@ def get_current_weather(city: str, aqi: str = 'no') -> dict:
 
 def transform_weather_data(current_weather_dict: dict) -> dict:
     """
-    Select required fields & rename
-    :param current_weather_dict: dict with all attributes that API provides
-    :return: dict with only required attributes
+    Отбирает только необходимые поля из словаря с погодными данными и переименовывает их.
+
+    :param current_weather_dict: Словарь с полными данными, полученными от API.
+    :return: Словарь с только нужными полями, где часть ключей переименована.
     """
     required_weather_params = [
         "location_name",
@@ -109,9 +122,10 @@ def transform_weather_data(current_weather_dict: dict) -> dict:
 
 def get_conn_credentials(conn_id: str) -> Connection:
     """
-    Function returns dictionary with connection credentials
-    :param conn_id: str with airflow connection id
-    :return: Connection
+    Возвращает объект подключения Airflow по заданному ID подключения.
+
+    :param conn_id: Строка с идентификатором подключения в Airflow.
+    :return: Объект Connection с данными подключения (хост, логин, пароль и т.д.).
     """
     conn = BaseHook.get_connection(conn_id)
     return conn
@@ -119,11 +133,12 @@ def get_conn_credentials(conn_id: str) -> Connection:
 
 def generate_insert_query(schema_name: str, table_name: str, data: dict) -> (str, list):
     """
-    Generates insert query (PostgreSQL dialect) from the given params
-    :param schema_name: schema name for insert query
-    :param table_name:  table name for insert query
-    :param data: dict of columns/data for insert query
-    :return: query string ready to be inserted, values
+    Формирует SQL-запрос на вставку данных в таблицу PostgreSQL.
+
+    :param schema_name: Имя схемы базы данных.
+    :param table_name: Имя таблицы для вставки данных.
+    :param data: Словарь, где ключи — имена столбцов, а значения — данные для вставки.
+    :return: Кортеж из строки SQL-запроса и кортежа значений для вставки.
     """
 
     columns = ", ".join(data.keys())
@@ -138,7 +153,9 @@ def generate_insert_query(schema_name: str, table_name: str, data: dict) -> (str
 
 def load_to_db(data: dict) -> None:
     """
-    :param data: data to insert into PostgreSQL
+    Вставляет переданные данные в таблицу PostgreSQL.
+
+    :param data: Словарь с данными для вставки (ключи — имена столбцов, значения — данные).
     :return: None
     """
     pg_conn_credentials = get_conn_credentials('weather_conn')
@@ -159,6 +176,13 @@ def load_to_db(data: dict) -> None:
 
 
 def etl(**kwargs) -> None:
+    """
+    Выполняет ETL-процесс для списка городов:
+    извлекает текущие погодные данные, преобразует их и загружает в базу данных.
+
+    :param kwargs: ожидается ключ 'city' с списком городов (list[str])
+    :return: None
+    """
     city = kwargs['city']
     print('Start etl')
     for city_name in city:
